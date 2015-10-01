@@ -1,0 +1,15 @@
+gcc --version
+export PATH=$HOME/bin:$PATH
+source ~/.bashrc
+echo $PATH
+cd
+mkdir src
+cd src
+curl -LO https://github.com/git/git/tarball/v2.6.0
+wget https://github.com/git/git/tarball/v2.6.0
+tar -xzvf v2.6.0
+ls -a
+cd git-git-XXXXXXX
+make
+make install
+git --version
