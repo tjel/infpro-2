@@ -1,13 +1,16 @@
-# include <iostream>
+#include <iostream>
 
 using namespace std;
 
-int main( ) 
+int main() 
 { 
-    float PI = 3.14;                // variables can be initialized during declaration 
-    int rad; 
-    cout<< "Enter the radius"; 
-    cin>>rad; 
+    float PI = 3.1415;                // variables can be initialized during declaration 
+    double rad; 
+	do
+	{    
+		cout<< "Enter the radius: "; 
+    	cin>>rad;
+	}while(rad<0);
     cout<< "Area of the circle is "<< PI * rad * rad; 
     return 0;
 }  
