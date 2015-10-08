@@ -10,7 +10,7 @@ int main()
 	{    
 		cout<< "Enter the radius: "; 
     	cin>>rad;
-		if(rad<0){"Podaj wartosc dodatnia, dobra?\n\n";}
+		if(rad<0){"Podaj wartosc dodatnia, dobra frajerze?\n\n";}
 	}while(rad<0);
     cout<< "Area of the circle is "<< PI * rad * rad;
     return 0;
