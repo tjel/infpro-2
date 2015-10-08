@@ -8,6 +8,7 @@ int main( )
     float rad; 
     cout<<"Enter the radius: "; 
     cin>>rad;
+    cout<<""<<endl;
     if(rad>0){
     	cout<< "Area of the circle is "<< PI * rad * rad;
     }else{cout<<"Radius must be > 0!"<<endl;} 
