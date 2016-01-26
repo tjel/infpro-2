@@ -13,7 +13,10 @@ BR - prawdopodobieñstwo rozpadu
 NDA - na ile cz¹steczek siê rozpada
 */
 const int lPDGmax=100;///maksymalna liczba PDG, które mog¹ siê jakoœ rozpadaæ
-const int rxmax=10,rymax=400;
+const int nmax=100;///maksymalna liczba PDG, których ujemna wersja rozpada siê tak samo
+const int rxmax=10,rymax=400;///maksymalna szerokoœæ i d³ugoœæ tabeli rozpadu
+const int cxmax=100,cymax=400;///maksymalna szerokoœæ i d³ugoœæ tabeli ci¹gów odwo³añ do tabeli rozpadu
+const int kmax=50;///maksymalna liczba kopii ci¹gu
 
 char BRchar[15];///stringowy zapis BR
 char linia[100];///1 linia zczytanego tekstu
@@ -28,9 +31,11 @@ bool wyjscie=0;///czy zdefiniowany zosta³ plik wyjœcia
 bool grapha=0;///czy jest wyjscie na grafikê
 bool inputbyl=0;///upewnienie siê, czy zosta³ podany plik z danymi
 int rciag[rxmax][rymax],rir[rxmax][rymax];
-double rprawd[rymax],ciagBR[400];
-int ciagPDG[20][400];
+double rprawd[rymax],ciagBR[cymax];
+int ciagPDG[cxmax][cymax];
+int neutral[nmax];
 int nrx,nry;
+int ymax;///faktyczna d³ugoœæ tabeli rozpadu
 ifstream wczyt,wczyt2;///odczytanie danych
 ofstream zapis;///zapisanie danych do pliku tekstowego
 
@@ -98,6 +103,8 @@ double char_to_br()///zamiana zapisu potêgi E na normaln¹ liczbê
     }
     return wynik;
 }
+
+bool jest_neutralny(int PDGid){for(short int i=0;i<nmax;i++){if(neutral[i]==PDGid||neutral[i]==PDGid*(-1)){return 1;}}return 0;}
 
 /**void rozpad(int PDGid, double prawd, int poziom_rozpadu)///tworzenie rozpadów
 {
@@ -421,33 +428,79 @@ void rozpad_ciagi_poczatek()
             }
         }
     }
+    for(short int i=0;i<rymax;i++){if(rciag[0][i]==0){ymax=i;break;}}
 }
 
 int tworzenie_ciagow(int PDGid, double prawdop, int nrxx, int nryy, int nx=0, int ny=0)
 {
-    int kopia[20],knr=0,numer;
+    int kopia[kmax],knr=0,numer;
+    int nrxs=nrxx;
     for(short int i=0;i<rir[nx][ny];i++)///numer wersji
     {
-        numer=0;kopia[knr]=nryy;
-        for(short int y=0;y<rymax;y++)
+        numer=0;kopia[knr]=nryy;nrxx=nrxs;
+        for(short int y=0;y<ymax;y++)
         {
             if(numer<=i)
             {
                 if(rciag[0][y]==PDGid||rciag[0][y]==PDGid*(-1))
                 {
-                    if(numer==i&&prawdop*rprawd[y]>=BR&&prawdop*rprawd[y]>=0.0)
+                    if(numer==i&&prawdop*rprawd[y]>0.0)
                     {
-                        ciagBR[nryy]=prawdop*rprawd[y];
-                        ciagPDG[nrxx][nryy]=y;nrxx++;
-                        for(short int x=1;x<rxmax;x++)
+                        if(prawdop*rprawd[y]>=BR)
                         {
-                            if(rir[x][y]==-1){break;}
-                            else
+                            ciagBR[nryy]=prawdop*rprawd[y];
+                            ///cout<<nrxx<<"/"<<nryy<<": "<<y<<"("<<PDGid<<")"<<endl;///sprawdzenie
+                            ciagPDG[nrxx][nryy]=y;nrxx++;
+                            for(short int x=1;x<rxmax;x++)
                             {
-                                if(rir[x][y]==0){ciagPDG[nrxx][nryy]=2000+x;nrxx++;}
+                                if(rir[x][y]==-1){break;}
                                 else
                                 {
-                                    nrxx=tworzenie_ciagow(rciag[x][y],prawdop*rprawd[y],nrxx,nryy,x,y);
+                                    if(PDGid>0||jest_neutralny(PDGid)==1)///rozpad zwyk³y
+                                    {
+                                        if(rir[x][y]==0){ciagPDG[nrxx][nryy]=2000+x;nrxx++;}
+                                        else
+                                        {
+                                            nrxx=tworzenie_ciagow(rciag[x][y],prawdop*rprawd[y],nrxx,nryy,x,y);
+                                        }
+                                    }
+                                    else///rozk³ad odwrotny
+                                    {
+                                        if(rir[x][y]==0){ciagPDG[nrxx][nryy]=(2000+x)*(-1);nrxx++;}
+                                        else
+                                        {
+                                            nrxx=tworzenie_ciagow(rciag[x][y]*(-1),prawdop*rprawd[y],nrxx,nryy,x,y);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else///bez rozpadu
+                        {
+                            ciagBR[nryy]=prawdop;
+                            for(short int x=0;x<rxmax;x++)
+                            {
+                                if(rir[x][y]==-1){break;}
+                                else
+                                {
+                                    if(PDGid>0||jest_neutralny(PDGid)==1)///rozpad zwyk³y
+                                    {
+                                        if(rir[x][y]==0){ciagPDG[nrxx][nryy]=2000+x;nrxx++;}
+                                        else
+                                        {
+                                            ciagPDG[nrxx][nryy]=y;nrxx++;
+                                            ciagPDG[nrxx][nryy]=2000;nrxx++;
+                                        }
+                                    }
+                                    else///rozk³ad odwrotny
+                                    {
+                                        if(rir[x][y]==0){ciagPDG[nrxx][nryy]=(2000+x)*(-1);nrxx++;}
+                                        else
+                                        {
+                                            ciagPDG[nrxx][nryy]=y;nrxx++;
+                                            ciagPDG[nrxx][nryy]=-2000;nrxx++;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -459,9 +512,9 @@ int tworzenie_ciagow(int PDGid, double prawdop, int nrxx, int nryy, int nx=0, in
         knr++;
         do{nryy++;}while(ciagPDG[0][nryy]!=-1);
     }
-    for(short int i=1;i<knr;i++)
+    for(short int i=1;i<knr;i++)///kopiowanie
     {
-        for(short int x=0;x<nrxx;x++){ciagPDG[x][kopia[i]]=ciagPDG[x][kopia[0]];}
+        for(short int x=0;x<nrxs;x++){ciagPDG[x][kopia[i]]=ciagPDG[x][kopia[0]];}
     }
     return nrxx;
 }
@@ -469,14 +522,14 @@ void tworzenie_ciagow_poczatek(int PDGid)
 {
     int nrxx,nryy,numer=0;
     double prawdop=1.0;
-    for(short int x=0;x<20;x++)
+    for(short int x=0;x<cxmax;x++)
     {
-        for(short int y=0;y<400;y++){ciagPDG[x][y]=(-1);}
+        for(short int y=0;y<cymax;y++){ciagPDG[x][y]=(-1);}
     }
     nrxx=0;nryy=0;
-    for(short int y=0;y<rymax;y++)
+    for(short int y=0;y<ymax;y++)
     {
-        if((rciag[0][y]==PDGid||rciag[0][y]==PDGid*(-1))&&prawdop*rprawd[y]>=BR&&prawdop*rprawd[y]>=0.0)///pocz¹tek tworzenia ci¹gu koñcowego
+        if((rciag[0][y]==PDGid||rciag[0][y]==PDGid*(-1))&&prawdop*rprawd[y]>=BR&&prawdop*rprawd[y]>0.0)///pocz¹tek tworzenia ci¹gu koñcowego
         {
             ///cout<<"x/y"<<y<<"/"<<nry<<":";
 			ciagPDG[nrxx][nryy]=y;ciagBR[nryy]=prawdop*rprawd[y];nrxx++;
@@ -485,7 +538,7 @@ void tworzenie_ciagow_poczatek(int PDGid)
                 if(rir[x][y]==-1){break;}
                 else
                 {
-                    if(rir[x][y]==0){ciagPDG[nrxx][nryy]=2000+x;nrxx++;}
+                    if(rir[x][y]==0){ciagPDG[nrxx][nryy]=2000+x;nrxx++;if(nrxx>cxmax){nrxx=cxmax-1;}}
                     else
                     {
                         nrxx=tworzenie_ciagow(rciag[x][y],prawdop*rprawd[y],nrxx,nryy,x,y);
@@ -495,13 +548,31 @@ void tworzenie_ciagow_poczatek(int PDGid)
             do{nryy++;}while(nryy<400&&ciagPDG[0][nryy]!=-1);nrxx=0;
         }
     }
+    for(short int i=0;i<cymax;i++){if(ciagPDG[0][i]==-1){ymax=i;break;}}
+}
+
+void ciagi_sortowanie()
+{
+    int zast;
+    double zastBR;
+    for(short int i=0;i<ymax;i++)
+    {
+        for(short int j=ymax-1;j>i;j--)
+        {
+            if(ciagBR[j]>ciagBR[j-1])///zamiana miejsc
+            {
+                for(short int x=0;x<cxmax;x++){zast=ciagPDG[x][j];ciagPDG[x][j]=ciagPDG[x][j-1];ciagPDG[x][j-1]=zast;}
+                zastBR=ciagBR[j];ciagBR[j]=ciagBR[j-1];ciagBR[j-1]=zastBR;
+            }
+        }
+    }
 }
 
 void ciagi_odczyt()
 {
     int numer;
     int xx=0,yy=0;
-    for(short int y=0;y<400;y++)
+    for(short int y=0;y<ymax;y++)
     {
         if(ciagPDG[0][y]!=-1)
         {
@@ -513,7 +584,8 @@ void ciagi_odczyt()
                 if(ciagPDG[x][y]>=2000){xx=ciagPDG[x][y]-2000;cout<<rciag[xx][yy];if(wyjscie==1){zapis<<rciag[xx][yy];}if(x<19&&ciagPDG[x+1][y]!=-1){cout<<",";if(wyjscie==1){zapis<<",";}}}
                 else
                 {
-                    if(ciagPDG[x][y]>=0){yy=ciagPDG[x][y];}
+                    if(ciagPDG[x][y]<=-2000){xx=(ciagPDG[x][y]+2000)*(-1);cout<<rciag[xx][yy]*(-1);if(wyjscie==1){zapis<<rciag[xx][yy]*(-1);}if(x<19&&ciagPDG[x+1][y]!=-1){cout<<",";if(wyjscie==1){zapis<<",";}}}
+                    else{if(ciagPDG[x][y]>=0){yy=ciagPDG[x][y];}}
                 }
             }
             cout<<"},"<<ciagBR[y]<<"}\n";
@@ -656,6 +728,37 @@ void lPDGrozpad()
     wczyt.close();wczyt.clear();
 }
 
+void lista_neutral()
+{
+    int PDGpob;int numpom;
+    for(short int i=0;i<nmax;i++){neutral[i]=0;}
+    wczyt.open("neutral.txt");
+    if(!wczyt){cout<<"Nie znaleziono pliku neutral.txt!\n";}
+    else
+    {
+        int xx=0;
+        while(!wczyt.eof())///odwo³ujemy siê do pliku z numerami PDG
+        {
+            ///pobranie numeru PDG
+            PDGpob=0;
+            wczyt.getline(linia,100);
+            short int i=0,liczba;
+            do
+            {
+                liczba=char_to_int(linia[i]);
+                PDGpob*=10;PDGpob+=liczba;
+                i++;
+            }while(linia[i]!='#'&&linia[i]!='\0'&&i<100);
+            if(PDGpob>0)
+            {
+                neutral[xx]=PDGpob;
+                xx++;
+            }
+        }
+    }
+    wczyt.close();wczyt.clear();
+}
+
 /**void wyniki()
 {
     for(short int i=0;i<ciagile;i++)
@@ -676,6 +779,7 @@ void lPDGrozpad()
 
 int main(int argc, char** argv)///pobieranie parametrów
 {
+	lista_neutral();
 	for(int i=1;i<argc;i++)
     {
         if(argv[i][0]=='-'&&argv[i][1]=='-')
@@ -758,7 +862,7 @@ int main(int argc, char** argv)///pobieranie parametrów
 	//for(int i=0;i<ciagmax;i++){BRciag[i]=0.0;for(short int j=0;j<ciagile;j++){PDGciag[i][j]=0;}}
 	lPDGrozpad();///przygotowanie listy rozpad³ych PDG
 	rozpad_ciagi_poczatek();///przygotowanie tabelki rozpadów
-	for(short int y=0;y<100;y++)
+	/**for(short int y=0;y<100;y++)///sprawdzanie
     {
         if(rciag[0][y]!=0)
         {
@@ -769,11 +873,11 @@ int main(int argc, char** argv)///pobieranie parametrów
         	}
         	cout<<"BR="<<rprawd[y]<<endl;
         }
-    }
+    }*/
     if(wszystkie!=1)
     {
-        tworzenie_ciagow_poczatek(PDG);
-        for(short int y=0;y<100;y++)
+        tworzenie_ciagow_poczatek(PDG);ciagi_sortowanie();
+        /**for(short int y=0;y<100;y++)///sprawdzanie
         {
             if(ciagPDG[0][y]!=-1)
             {
@@ -784,7 +888,7 @@ int main(int argc, char** argv)///pobieranie parametrów
                 }
                 cout<<endl;
             }
-        }
+        }*/
         ciagi_odczyt();
     }
     else
@@ -793,7 +897,7 @@ int main(int argc, char** argv)///pobieranie parametrów
         {
             if(PDGrozpadane[i]!=0)
             {
-                tworzenie_ciagow_poczatek(PDGrozpadane[i]);
+                tworzenie_ciagow_poczatek(PDGrozpadane[i]);ciagi_sortowanie();
                 ciagi_odczyt();
             }
         }
@@ -817,7 +921,7 @@ int main(int argc, char** argv)///pobieranie parametrów
     //wyniki();
     zapis.close();
     wczyt2.close();
-    ///fremover();///usuwanie plików pomocniczych
+    fremover();///usuwanie plików pomocniczych
 	/**
 	argc - liczba argumentów
 	argv[0] - nazwa programu
