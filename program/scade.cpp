@@ -779,7 +779,8 @@ void lista_neutral()
 
 int main(int argc, char** argv)///pobieranie parametrów
 {
-	lista_neutral();
+	lista_neutral();///wczytanie listy cz¹steczek neutralnych
+	char PDGchar[20];for(short int i=0;i<20;i++){PDGchar[i]='\0';}///PDG w wersji tekstowej
 	for(int i=1;i<argc;i++)
     {
         if(argv[i][0]=='-'&&argv[i][1]=='-')
@@ -789,6 +790,7 @@ int main(int argc, char** argv)///pobieranie parametrów
                 int j=5,liczba=-2;bool znak=1;
                 while(argv[i][j]!='\0')
                 {
+                    PDGchar[j-5]=argv[i][j];
                     liczba=char_to_int(argv[i][j]);
                     switch(liczba)
                     {
@@ -859,6 +861,7 @@ int main(int argc, char** argv)///pobieranie parametrów
     }
     if(inputbyl!=1){cout<<"Nie mozna wykonac programu, gdyz nie podano pliku z danymi!\nNastepnym razem wpisz --input= i podaj nazwe pliku!";return 0;}
 	freader(inputplik);///przygotowanie plików pomocniczych
+	if(grapha==1&&PDG!=0){paint();}///edit
 	//for(int i=0;i<ciagmax;i++){BRciag[i]=0.0;for(short int j=0;j<ciagile;j++){PDGciag[i][j]=0;}}
 	lPDGrozpad();///przygotowanie listy rozpad³ych PDG
 	rozpad_ciagi_poczatek();///przygotowanie tabelki rozpadów
